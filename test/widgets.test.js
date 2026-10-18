@@ -64,9 +64,20 @@ test('the widget before any device, and before any answer', async (t) => {
   const actual = createActual();
   actual.down = 'network-failure';
   const down = await world(t, { actual });
-  assert.deepEqual((await content(down, 'de')).components, [
-    { type: 'text', variant: 'heading', text: 'Actual Budget antwortet nicht' },
+  const failed = await content(down, 'de');
+  assert.deepEqual(validateWidgetContent(failed), []);
+  assert.deepEqual(failed.components, [
+    {
+      type: 'text',
+      variant: 'body',
+      text: 'Der Actual-Server antwortet nicht: die letzten Werte bleiben erhalten.',
+    },
   ]);
+  // Values kept after a failure: the footer says the last reading failed.
+  await createAll(w);
+  w.actual.down = 'invalid-password';
+  await w.monitor.fresh(true);
+  assert.match((await content(w, 'en')).components.at(-1).text, / · last reading failed$/);
 });
 
 test('read_balances: the accounts added, in the language of the configuration', async (t) => {
@@ -148,4 +159,15 @@ test('the account devices are the ones the widget and actions read', async (t) =
     data.components[0].items.map((item) => item.label),
     ['Credit card'],
   );
+});
+
+test('check_now during a reading uses it instead of reading twice', async (t) => {
+  const w = await world(t);
+  const calls = w.actual.calls.length;
+  w.clock.advance(60 * 60 * 1000);
+  const cycle = w.monitor.runCycle();
+  const { data } = await w.fake.action('check_now', {});
+  await cycle;
+  assert.equal(w.actual.calls.length, calls + 1);
+  assert.match(data.message.en, /^Connected to Actual Budget/);
 });

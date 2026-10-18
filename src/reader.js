@@ -42,7 +42,8 @@ const { default: api } = await import('@actual-app/api');
 async function remoteBudgets() {
   const budgets = new Map();
   for (const budget of await api.getBudgets()) {
-    if (budget.groupId && !budgets.has(budget.groupId)) {
+    // Only the budgets of the server: a stale local copy is not a choice.
+    if (budget.state === 'remote' && budget.groupId && !budgets.has(budget.groupId)) {
       budgets.set(budget.groupId, budget.name);
     }
   }
@@ -101,7 +102,8 @@ try {
   result = await read(workerData);
 } catch (err) {
   result = { ok: false, code: String(err?.code ?? err?.reason ?? 'unknown') };
-} finally {
-  await api.shutdown().catch(() => {});
 }
+// Posted before the shutdown, which syncs again and could hit the time limit
+// on a server that does not answer; the main thread waits for the exit anyway.
 parentPort.postMessage(result);
+await api.shutdown().catch(() => {});

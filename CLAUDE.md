@@ -246,7 +246,7 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   d'Actual (≈ 110 Mo de RSS une fois chargé, `better-sqlite3` natif : prébuild musl x64/arm64, rien à
   compiler sur l'image alpine). Il tient **un budget global** et écrit sur la console (noms, ids). D'où le
   **worker éphémère** (`src/reader.js`) : console muette, mémoire rendue à la fin de chaque lecture, tas
-  plafonné (`resourceLimits`), délai de 120 s. Au repos, le conteneur ne charge pas le paquet.
+  plafonné (`resourceLimits`), délai de 90 s (une action a 120 s au plus, limite du store). Au repos, le conteneur ne charge pas le paquet.
 - **Séquence** : `init({ dataDir, serverURL, password })` (connexion), `downloadBudget(syncId, { password })`
   (1re fois : téléchargement ; ensuite : chargement de la copie locale + sync), `getAccounts`,
   `getAccountBalance`, `getBudgetMonths`/`getBudgetMonth`, `getPreferences` (`defaultCurrencyCode`), le

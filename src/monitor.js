@@ -46,8 +46,10 @@ export const DEFAULT_TIMINGS = {
   widgetRefreshMs: 10000,
 };
 
-// Problems after which the local copy of the budget is dropped and downloaded again.
-const RESYNC = new Set(['resync', 'tooNew']);
+// The problem after which the local copy of the budget is dropped and
+// downloaded again (a budget newer than the package is not: downloading again
+// would not help).
+const RESYNC = 'resync';
 
 /** Whether a level of the trigger is reached by a category. */
 const reaches = (category, level) =>
@@ -76,6 +78,8 @@ export class Monitor {
     this.timings = { ...DEFAULT_TIMINGS, ...timings };
     this.config = null;
     this.ready = false;
+    // The local copy of the budget is to be removed before the next reading.
+    this.dropPending = false;
     this.data = emptyData();
     this.snapshot = null;
     this.problem = null;
@@ -121,7 +125,7 @@ export class Monitor {
     }
     // The configuration may have changed while the container was stopped: the
     // budget is downloaded again rather than mixed with another one.
-    await this.dropCache();
+    this.dropPending = true;
     this.configure(config);
     logger.info(`Started: Actual Budget read every ${config.refreshMinutes} min`);
     this.schedule();
@@ -177,7 +181,8 @@ export class Monitor {
       this.signature = null;
       this.lastSuccessAt = null;
       this.budgets = null;
-      await this.dropCache();
+      // Removed by the next cycle, never under a reading in progress.
+      this.dropPending = true;
     }
     this.configure(config);
     // The language or the currency may have changed: devices published again.
@@ -279,16 +284,20 @@ export class Monitor {
       await this.updateConnectionStatus();
       return;
     }
+    if (this.dropPending) {
+      this.dropPending = false;
+      await this.dropCache();
+    }
     let raw;
     try {
       try {
         raw = await this.readOnce(now);
       } catch (err) {
-        if (!RESYNC.has(problemOf(err))) {
+        if (problemOf(err) !== RESYNC) {
           throw err;
         }
         // The local copy no longer matches the server: download it again.
-        logger.info(`Local copy of the budget dropped (${err.code})`);
+        logger.debug(`Local copy of the budget dropped (${err.code})`);
         await this.dropCache();
         raw = await this.readOnce(now);
       }
@@ -339,7 +348,7 @@ export class Monitor {
       this.discovered = signature;
       this.recovered('discovery', 'Publishing the devices works again');
     } catch (err) {
-      this.failed('discovery', 'warn', `Publishing the devices failed: ${err.message}`);
+      this.failed('discovery', 'warn', `Publishing the devices failed: ${errorOf(err)}`);
     }
   }
 
@@ -379,7 +388,7 @@ export class Monitor {
       this.recovered('publish', 'Publishing the states works again');
     } catch (err) {
       // Sent again at the next cycle (the SDK forgets what Gladys refused).
-      this.failed('publish', 'warn', `Publishing the states failed: ${err.message}`);
+      this.failed('publish', 'warn', `Publishing the states failed: ${errorOf(err)}`);
     }
   }
 
@@ -465,7 +474,7 @@ export class Monitor {
       this.recovered('scene', 'Scene triggers work again');
       return true;
     } catch (err) {
-      this.failed('scene', 'warn', `Firing the scene trigger failed: ${err.message}`);
+      this.failed('scene', 'warn', `Firing the scene trigger failed: ${errorOf(err)}`);
       return false;
     }
   }
@@ -495,7 +504,11 @@ export class Monitor {
 
   /** The snapshot, read again if the last cycle is older than one interval (or `force`). */
   async fresh(force = false) {
-    await this.running;
+    if (this.running) {
+      // A reading in progress is fresh enough, even for "Test the connection".
+      await this.running;
+      return this.snapshot;
+    }
     if (force || this.now() - this.lastCycleAt >= this.config.refreshMinutes * MINUTE) {
       await this.runCycle();
     }
@@ -525,6 +538,9 @@ export class Monitor {
 
 /** The first characters of the id in an external id: enough to tell categories apart in the logs. */
 const platformRef = (externalId) => externalId.split(':').pop().slice(0, 8);
+
+/** A failure of the Gladys API, without its message (it could echo a name). */
+const errorOf = (err) => (err?.status ? `HTTP ${err.status}` : (err?.code ?? err?.name ?? 'error'));
 
 /** What identifies the budget read. */
 const budgetOf = (config) => config && JSON.stringify([config.url, config.syncId]);

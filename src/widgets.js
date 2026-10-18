@@ -13,7 +13,7 @@
 import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
 import { DEVICE_TYPES } from './devices.js';
 import { WIDGET_KEY } from './monitor.js';
-import { formatAmount, formatDate, formatPercent } from './texts.js';
+import { STATUS, formatAmount, formatDate, formatPercent } from './texts.js';
 
 export const MAX_ROWS = 10;
 export const MAX_CATEGORIES = 8;
@@ -32,11 +32,11 @@ export const TEXT = {
     de: 'Füge Konten/Kategorien hinzu',
     es: 'Añada cuentas o categorías',
   },
-  unreachable: {
-    en: 'Actual Budget does not answer',
-    fr: 'Actual Budget ne répond pas',
-    de: 'Actual Budget antwortet nicht',
-    es: 'Actual Budget no responde',
+  failed: {
+    en: 'last reading failed',
+    fr: 'dernière lecture en échec',
+    de: 'letztes Lesen fehlgeschlagen',
+    es: 'última lectura fallida',
   },
   toBudget: { en: 'To budget', fr: 'À budgéter', de: 'Zu budgetieren', es: 'Por presupuestar' },
   spent: { en: 'spent', fr: 'dépensé', de: 'ausgegeben', es: 'gastado' },
@@ -80,8 +80,13 @@ export const WIDGETS = {
       const lang = TEXT.spent[language] ? language : 'en';
       const components = [];
       if (!monitor.snapshot) {
-        const text = monitor.problem ? t(TEXT.unreachable, lang) : t(TEXT.waiting, lang);
-        return { ttl_seconds: 60, components: [{ type: 'text', variant: 'heading', text }] };
+        if (!monitor.problem) {
+          const text = t(TEXT.waiting, lang);
+          return { ttl_seconds: 60, components: [{ type: 'text', variant: 'heading', text }] };
+        }
+        // What to do: a wrong password, a missing sync ID… not only "no answer".
+        const text = STATUS[lang][monitor.problem];
+        return { ttl_seconds: 60, components: [{ type: 'text', variant: 'body', text }] };
       }
       const currency = monitor.currency();
       const [month] = monitor.created(DEVICE_TYPES.MONTH);
@@ -119,7 +124,8 @@ export const WIDGETS = {
             .map((category) => categoryItem(category, currency, lang)),
         });
       }
-      const unreachable = monitor.problem ? ` · ${t(TEXT.unreachable, lang)}` : '';
+      // Last values kept: the problem in short, its detail is in the status.
+      const unreachable = monitor.problem ? ` · ${t(TEXT.failed, lang)}` : '';
       components.push({
         type: 'text',
         variant: 'caption',

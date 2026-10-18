@@ -16,8 +16,12 @@ RUN apk add --no-cache dumb-init
 WORKDIR /app
 
 # Install the PROD dependencies first (better build cache).
+# --ignore-scripts: better-sqlite3 (needed by @actual-app/api) ships its
+# binaries for linux and linuxmusl, x64 and arm64, and loads them at run time;
+# without it, npm runs node-gyp on its binding.gyp, which needs Python and a
+# compiler the image does not have. No other dependency has an install script.
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev || npm install --omit=dev
+RUN npm ci --omit=dev --ignore-scripts || npm install --omit=dev --ignore-scripts
 
 # Then the integration code.
 COPY index.js ./

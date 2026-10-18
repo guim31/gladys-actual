@@ -79,6 +79,9 @@ read on a real `actual-server` 26.10.0 (`test/fixtures/actual`, made-up budgets)
 
 - [Actual Budget](https://github.com/actualbudget/actual) and its `@actual-app/api` package by James
   Long and the Actual contributors (MIT), used as a dependency.
+- Cover: the Actual logo from
+  [`packages/component-library/src/icons/logo/logo.svg`](https://github.com/actualbudget/actual/blob/master/packages/component-library/src/icons/logo/logo.svg)
+  of the Actual repository (MIT), on its brand purple.
 - The Home Assistant custom integration
   [`ha-actualbudget`](https://github.com/jlvcm/ha-actualbudget) and the
   [`actualpy`](https://github.com/bvanelli/actualpy) library showed what users expect (balances,

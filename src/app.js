@@ -40,6 +40,10 @@ export function registerHandlers(gladys, options = {}) {
     (fn) =>
     async (...args) => {
       await ready;
+      if (!monitor.config) {
+        // The start failed (configuration unreadable): retried at the next connection.
+        throw new Error(render(STATUS, 'initFailed').en);
+      }
       return fn(...args);
     };
 

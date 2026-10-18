@@ -338,7 +338,7 @@
         "de": "Verbindung testen",
         "es": "Probar la conexión"
       },
-      "timeout_seconds": 180
+      "timeout_seconds": 120
     }
   ],
   "scene_triggers": [
@@ -517,7 +517,7 @@
         "de": "Der Stand jedes zu Gladys hinzugefügten Kontos, als Satz zum Senden per Nachricht oder zum Vorlesen.",
         "es": "El saldo de cada cuenta añadida a Gladys, en una frase para enviar por mensaje o leer en voz alta."
       },
-      "timeout_seconds": 180,
+      "timeout_seconds": 120,
       "outputs": [
         {
           "key": "text",
@@ -565,7 +565,7 @@
         "de": "Das zu budgetierende Geld, dann was jede zu Gladys hinzugefügte Kategorie diesen Monat ausgegeben hat und übrig hat, als ein Text.",
         "es": "El dinero por presupuestar y lo que cada categoría añadida a Gladys ha gastado y le queda este mes, en un texto."
       },
-      "timeout_seconds": 180,
+      "timeout_seconds": 120,
       "outputs": [
         {
           "key": "text",

@@ -10,8 +10,8 @@ import { rm } from 'node:fs/promises';
 import { Worker } from 'node:worker_threads';
 
 // A first download of a large budget takes a few seconds; a stuck server
-// must not block the readings forever.
-export const READ_TIMEOUT_MS = 120000;
+// must not block the readings forever, nor outlast the 120 s of an action.
+export const READ_TIMEOUT_MS = 90000;
 // Heap of the worker: the package alone takes about 60 MB of it. The
 // container has 256 MB in all.
 const WORKER_HEAP_MB = 160;
@@ -65,30 +65,33 @@ export function readBudget(options) {
     });
     worker.stdout.resume();
     worker.stderr.resume();
-    let settled = false;
-    const settle = (fn, value) => {
-      if (!settled) {
-        settled = true;
-        clearTimeout(timer);
-        fn(value);
-      }
-    };
+    // Settled only once the worker has ended: the next reading never runs
+    // beside it (same files, and twice the memory).
+    let result = null;
+    let failure = null;
     const timer = setTimeout(() => {
-      settle(reject, new ActualError('timeout'));
+      failure ??= new ActualError('timeout');
       worker.terminate();
     }, READ_TIMEOUT_MS);
-    worker.on('message', (result) => {
-      if (result?.ok) {
-        settle(resolve, result.raw);
-      } else {
-        settle(reject, new ActualError(result?.code ?? 'unknown', result?.budgets));
-      }
+    worker.on('message', (message) => {
+      result = message;
     });
     worker.on('error', (err) => {
-      const code = err?.code === 'ERR_WORKER_OUT_OF_MEMORY' ? 'out-of-memory' : 'worker-failed';
-      settle(reject, new ActualError(code));
+      failure ??= new ActualError(
+        err?.code === 'ERR_WORKER_OUT_OF_MEMORY' ? 'out-of-memory' : 'worker-failed',
+      );
     });
-    worker.on('exit', () => settle(reject, new ActualError('worker-failed')));
+    worker.on('exit', () => {
+      clearTimeout(timer);
+      if (result?.ok) {
+        resolve(result.raw);
+      } else if (result) {
+        // The answer came, the shutdown after it may have been cut short.
+        reject(new ActualError(result.code ?? 'unknown', result.budgets));
+      } else {
+        reject(failure ?? new ActualError('worker-failed'));
+      }
+    });
   });
 }
 

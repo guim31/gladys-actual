@@ -79,7 +79,7 @@ export async function readBudgets(monitor) {
     text: sentence(parts, phrases.noCategory),
     count: categories.length,
     over_count: categories.filter((category) => category.left !== null && category.left < 0).length,
-    to_budget: monitor.snapshot.month?.toBudget ?? 0,
+    to_budget: month?.toBudget ?? 0,
   };
 }
 
