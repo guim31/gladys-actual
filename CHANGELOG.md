@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-18
+
 ### Added
 
 - Actual Budget in Gladys, read only, through the official `@actual-app/api` package: one device
@@ -25,4 +27,5 @@ the notes of the version's GitHub Release.
   currency taken from Actual or chosen, refresh interval from 5 to 60 minutes.
 - Texts and documentation in English, French, German and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-actual/commits/main
+[Unreleased]: https://github.com/guim31/gladys-actual/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-actual/releases/tag/v1.0.0
