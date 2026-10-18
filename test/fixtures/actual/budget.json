@@ -1,0 +1,189 @@
+{
+  "accounts": [
+    {
+      "id": "7c92e3f7-f0ec-427b-8871-c278684fc05d",
+      "name": "Brokerage",
+      "offbudget": true,
+      "balance": 1000000
+    },
+    {
+      "id": "9cf13c64-54c1-4f2f-bc9f-741c6c4ceb6c",
+      "name": "Checking",
+      "offbudget": false,
+      "balance": 383295
+    },
+    {
+      "id": "fc8eab47-0112-4692-a299-6a5d14b9333e",
+      "name": "Savings",
+      "offbudget": false,
+      "balance": 500000
+    },
+    {
+      "id": "87a445e9-b9d2-4d84-9e22-e6e259b5a7da",
+      "name": "Credit card",
+      "offbudget": false,
+      "balance": -12050
+    }
+  ],
+  "month": {
+    "month": "2026-10",
+    "incomeAvailable": 920295,
+    "lastMonthOverspent": 0,
+    "forNextMonth": 0,
+    "totalBudgeted": -63000,
+    "toBudget": 857295,
+    "fromLastMonth": 0,
+    "totalIncome": 920295,
+    "totalSpent": -49050,
+    "totalBalance": 13950,
+    "categoryGroups": [
+      {
+        "id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+        "name": "Usual Expenses",
+        "is_income": false,
+        "hidden": false,
+        "categories": [
+          {
+            "id": "cf1ff606-7ef8-4ef6-8079-22d269813661",
+            "name": "Gifts",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+            "budgeted": 0,
+            "spent": -2500,
+            "balance": -2500,
+            "carryover": false
+          },
+          {
+            "id": "6e059fc3-5777-4047-9cea-d7526379e62a",
+            "name": "Hidden one",
+            "is_income": false,
+            "hidden": true,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+            "budgeted": 5000,
+            "spent": -1000,
+            "balance": 4000,
+            "carryover": false
+          },
+          {
+            "id": "541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+            "name": "Food",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+            "budgeted": 40000,
+            "spent": -32050,
+            "balance": 7950,
+            "carryover": false
+          },
+          {
+            "id": "af375fd4-d759-46b3-bffe-74a856151d57",
+            "name": "General",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+            "budgeted": 10000,
+            "spent": -4500,
+            "balance": 5500,
+            "carryover": false
+          },
+          {
+            "id": "d4b0f075-3343-4408-91ed-fae94f74e5bf",
+            "name": "Bills",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+            "budgeted": 8000,
+            "spent": -9000,
+            "balance": -1000,
+            "carryover": false
+          },
+          {
+            "id": "29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+            "name": "Bills (Flexible)",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+            "budgeted": 0,
+            "spent": 0,
+            "balance": 0,
+            "carryover": false
+          }
+        ],
+        "budgeted": 63000,
+        "spent": -49050,
+        "balance": 13950
+      },
+      {
+        "id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+        "name": "Investments and Savings",
+        "is_income": false,
+        "hidden": false,
+        "categories": [
+          {
+            "id": "6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+            "name": "Savings",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+            "budgeted": 0,
+            "spent": 0,
+            "balance": 0,
+            "carryover": false
+          }
+        ],
+        "budgeted": 0,
+        "spent": 0,
+        "balance": 0
+      },
+      {
+        "id": "0e60c686-0da4-41ac-aa5f-492d0a6908bb",
+        "name": "Archive",
+        "is_income": false,
+        "hidden": true,
+        "categories": [
+          {
+            "id": "3bddeea3-3fdb-4461-ac92-1b9f227f1428",
+            "name": "Archived hobby",
+            "is_income": false,
+            "hidden": false,
+            "group_id": "0e60c686-0da4-41ac-aa5f-492d0a6908bb",
+            "budgeted": 0,
+            "spent": 0,
+            "balance": 0,
+            "carryover": false
+          }
+        ],
+        "budgeted": 0,
+        "spent": 0,
+        "balance": 0
+      },
+      {
+        "id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+        "name": "Income",
+        "is_income": true,
+        "hidden": false,
+        "categories": [
+          {
+            "id": "3c1699a5-522a-435e-86dc-93d900a14f0e",
+            "name": "Income",
+            "is_income": true,
+            "hidden": false,
+            "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+            "received": 250000
+          },
+          {
+            "id": "506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+            "name": "Starting Balances",
+            "is_income": true,
+            "hidden": false,
+            "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+            "received": 670295
+          }
+        ],
+        "received": 920295
+      }
+    ]
+  },
+  "currency": null
+}
