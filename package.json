@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-actual",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Actual Budget integration for Gladys Assistant: account balances and envelopes of the month.",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -16,6 +16,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@actual-app/api": "^26.10.0",
     "@gladysassistant/integration-sdk": "^0.15.0"
   },
   "devDependencies": {

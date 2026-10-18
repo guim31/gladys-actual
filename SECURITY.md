@@ -30,6 +30,16 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration holds the password of the Actual server, which gives access to every budget on it,
+and the encryption password of the budget when it is end-to-end encrypted. Gladys stores them with
+the configuration and passes them to the container; the integration only sends them to the address
+of the Actual server given in the configuration (through the official `@actual-app/api` package)
+and never writes them to the logs. It never writes to the budget. Under `/data`, it keeps a local
+copy of the budget, as the Actual app does (not encrypted, even for an end-to-end encrypted budget;
+removed at every start and when another server or budget is configured), and which scene trigger
+levels were fired (identifiers, months and levels, no amount or name). It talks to the Actual server
+only, on the network of the user.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
 and the third-party services and devices the integration talks to.

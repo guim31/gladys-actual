@@ -1,177 +1,631 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Actual Budget",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Account balances and envelopes of the month of your Actual Budget in Gladys.",
+    "fr": "Soldes des comptes et enveloppes du mois de votre Actual Budget dans Gladys.",
+    "de": "Kontostände und Umschläge des Monats deines Actual Budget in Gladys.",
+    "es": "Saldos de las cuentas y sobres del mes de su Actual Budget en Gladys."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-actual:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-actual/main/cover.png",
+  "categories": ["services"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connection to Actual Budget",
+        "fr": "Connexion à Actual Budget",
+        "de": "Verbindung zu Actual Budget",
+        "es": "Conexión con Actual Budget"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Enter the address of your Actual server and its password. With several budgets on the server, add the sync ID of the one to read (Settings → Show advanced settings). Then add the accounts and categories you want in the Discover tab.",
+        "fr": "Indiquez l'adresse de votre serveur Actual et son mot de passe. Si le serveur a plusieurs budgets, ajoutez l'ID de synchronisation de celui à lire (Paramètres → Afficher les paramètres avancés). Ajoutez ensuite les comptes et catégories voulus dans l'onglet Découverte.",
+        "de": "Gib die Adresse deines Actual-Servers und sein Passwort an. Hat der Server mehrere Budgets, füge die Sync-ID des zu lesenden hinzu (Einstellungen → Erweiterte Einstellungen anzeigen). Füge dann die gewünschten Konten und Kategorien im Tab „Entdecken“ hinzu.",
+        "es": "Indique la dirección de su servidor Actual y su contraseña. Si el servidor tiene varios presupuestos, añada el ID de sincronización del que desea leer (Ajustes → Mostrar ajustes avanzados). Después añada las cuentas y categorías que desee en la pestaña Descubrir."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-actual/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Installationsanleitung",
+            "es": "Guía de instalación"
+          }
+        },
+        {
+          "url": "https://actualbudget.org/docs/",
+          "label": {
+            "en": "Actual Budget documentation",
+            "fr": "Documentation d'Actual Budget",
+            "de": "Dokumentation von Actual Budget",
+            "es": "Documentación de Actual Budget"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Address of the Actual server",
+        "fr": "Adresse du serveur Actual",
+        "de": "Adresse des Actual-Servers",
+        "es": "Dirección del servidor Actual"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "description": {
+        "en": "The address you open Actual with, reachable from Gladys.",
+        "fr": "L'adresse à laquelle vous ouvrez Actual, joignable depuis Gladys.",
+        "de": "Die Adresse, unter der du Actual öffnest, von Gladys aus erreichbar.",
+        "es": "La dirección con la que abre Actual, accesible desde Gladys."
+      },
+      "placeholder": {
+        "en": "e.g. http://192.168.1.20:5006",
+        "fr": "ex. http://192.168.1.20:5006",
+        "de": "z. B. http://192.168.1.20:5006",
+        "es": "p. ej. http://192.168.1.20:5006"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Server password",
+        "fr": "Mot de passe du serveur",
+        "de": "Server-Passwort",
+        "es": "Contraseña del servidor"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "The password you log in to Actual with. Read only: the integration never writes to your budget. Stored by Gladys, never written to the logs.",
+        "fr": "Le mot de passe avec lequel vous vous connectez à Actual. Lecture seule : l'intégration n'écrit jamais dans votre budget. Gardé par Gladys, jamais écrit dans les journaux.",
+        "de": "Das Passwort, mit dem du dich bei Actual anmeldest. Nur lesend: die Integration schreibt nie in dein Budget. Von Gladys gespeichert, nie in die Protokolle geschrieben.",
+        "es": "La contraseña con la que inicia sesión en Actual. Solo lectura: la integración nunca escribe en su presupuesto. Guardada por Gladys, nunca escrita en los registros."
+      },
+      "required": true
     },
     {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "key": "sync_id",
+      "type": "string",
+      "label": {
+        "en": "Sync ID of the budget",
+        "fr": "ID de synchronisation du budget",
+        "de": "Sync-ID des Budgets",
+        "es": "ID de sincronización del presupuesto"
+      },
+      "description": {
+        "en": "Empty: the only budget of the server. In Actual: Settings → Show advanced settings → Sync ID.",
+        "fr": "Vide : le seul budget du serveur. Dans Actual : Paramètres → Afficher les paramètres avancés → ID de synchronisation.",
+        "de": "Leer: das einzige Budget des Servers. In Actual: Einstellungen → Erweiterte Einstellungen anzeigen → Sync-ID.",
+        "es": "Vacío: el único presupuesto del servidor. En Actual: Ajustes → Mostrar ajustes avanzados → ID de sincronización."
+      },
+      "placeholder": {
+        "en": "e.g. 1cfdbb80-6274-49bf-b0c2-737235a4c81f",
+        "fr": "ex. 1cfdbb80-6274-49bf-b0c2-737235a4c81f",
+        "de": "z. B. 1cfdbb80-6274-49bf-b0c2-737235a4c81f",
+        "es": "p. ej. 1cfdbb80-6274-49bf-b0c2-737235a4c81f"
+      },
       "required": false,
-      "default": "celsius",
+      "default": ""
+    },
+    {
+      "key": "encryption_password",
+      "type": "secret",
+      "label": {
+        "en": "Encryption password",
+        "fr": "Mot de passe de chiffrement",
+        "de": "Verschlüsselungspasswort",
+        "es": "Contraseña de cifrado"
+      },
+      "description": {
+        "en": "Only for a budget with end-to-end encryption.",
+        "fr": "Seulement pour un budget chiffré de bout en bout.",
+        "de": "Nur für ein Ende-zu-Ende-verschlüsseltes Budget.",
+        "es": "Solo para un presupuesto con cifrado de extremo a extremo."
+      },
+      "required": false
+    },
+    {
+      "key": "currency",
+      "type": "select",
+      "label": {
+        "en": "Currency",
+        "fr": "Devise",
+        "de": "Währung",
+        "es": "Divisa"
+      },
+      "description": {
+        "en": "Currency of the amounts. Automatic: the default currency set in Actual, euro if none.",
+        "fr": "Devise des montants. Automatique : la devise par défaut réglée dans Actual, l'euro sinon.",
+        "de": "Währung der Beträge. Automatisch: die in Actual eingestellte Standardwährung, sonst Euro.",
+        "es": "Divisa de los importes. Automática: la divisa predeterminada de Actual, el euro si no hay."
+      },
+      "required": false,
+      "default": "auto",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "auto",
+          "label": {
+            "en": "Automatic",
+            "fr": "Automatique",
+            "de": "Automatisch",
+            "es": "Automática"
+          }
+        },
+        {
+          "value": "EUR",
+          "label": {
+            "en": "Euro (€)",
+            "fr": "Euro (€)",
+            "de": "Euro (€)",
+            "es": "Euro (€)"
+          }
+        },
+        {
+          "value": "USD",
+          "label": {
+            "en": "US dollar ($)",
+            "fr": "Dollar américain ($)",
+            "de": "US-Dollar ($)",
+            "es": "Dólar estadounidense ($)"
+          }
+        },
+        {
+          "value": "GBP",
+          "label": {
+            "en": "Pound sterling (£)",
+            "fr": "Livre sterling (£)",
+            "de": "Pfund Sterling (£)",
+            "es": "Libra esterlina (£)"
+          }
+        },
+        {
+          "value": "CHF",
+          "label": {
+            "en": "Swiss franc (CHF)",
+            "fr": "Franc suisse (CHF)",
+            "de": "Schweizer Franken (CHF)",
+            "es": "Franco suizo (CHF)"
+          }
+        },
+        {
+          "value": "CAD",
+          "label": {
+            "en": "Canadian dollar (CA$)",
+            "fr": "Dollar canadien ($ CA)",
+            "de": "Kanadischer Dollar (CA$)",
+            "es": "Dólar canadiense (CA$)"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "refresh_interval",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Fréquence de mise à jour",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "How often Actual Budget is read. Your money does not move by the second: 15 minutes is plenty.",
+        "fr": "Fréquence de lecture d’Actual Budget. Votre argent ne bouge pas à la seconde : 15 minutes suffisent.",
+        "de": "Wie oft Actual Budget gelesen wird. Dein Geld bewegt sich nicht sekündlich: 15 Minuten reichen.",
+        "es": "Frecuencia de lectura de Actual Budget. Su dinero no se mueve cada segundo: 15 minutos bastan."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "15",
+      "options": [
+        {
+          "value": "5",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "10",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 minutes",
+            "fr": "60 minutes",
+            "de": "60 Minuten",
+            "es": "60 minutos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the texts",
+        "fr": "Langue des textes",
+        "de": "Sprache der Texte",
+        "es": "Idioma de los textos"
+      },
+      "description": {
+        "en": "Names of the features (at their creation) and texts sent to the scenes.",
+        "fr": "Noms des fonctionnalités (à leur création) et textes envoyés aux scènes.",
+        "de": "Namen der Funktionen (bei ihrer Erstellung) und Texte für die Szenen.",
+        "es": "Nombres de las funciones (al crearlas) y textos enviados a las escenas."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "check_now",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "timeout_seconds": 180
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "category_threshold",
+      "label": {
+        "en": "Actual Budget: envelope threshold",
+        "fr": "Actual Budget : seuil d'enveloppe",
+        "de": "Actual Budget: Umschlagschwelle",
+        "es": "Actual Budget: umbral de sobre"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "The spending of a category reaches the chosen share of its money this month, or the category is overspent. Once per level and per month.",
+        "fr": "Les dépenses d'une catégorie atteignent la part choisie de son argent du mois, ou la catégorie est dépassée. Une fois par seuil et par mois.",
+        "de": "Die Ausgaben einer Kategorie erreichen den gewählten Anteil ihres Geldes im Monat, oder die Kategorie ist überzogen. Einmal pro Schwelle und Monat.",
+        "es": "El gasto de una categoría alcanza la parte elegida de su dinero del mes, o la categoría está sobrepasada. Una vez por umbral y por mes."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Category",
+            "fr": "Catégorie",
+            "de": "Kategorie",
+            "es": "Categoría"
+          }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "key": "level",
+          "type": "select",
+          "required": true,
+          "default": "100",
+          "label": {
+            "en": "Level reached",
+            "fr": "Seuil atteint",
+            "de": "Erreichte Schwelle",
+            "es": "Umbral alcanzado"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "50",
+              "label": {
+                "en": "50 %",
+                "fr": "50 %",
+                "de": "50 %",
+                "es": "50 %"
+              }
+            },
+            {
+              "value": "75",
+              "label": {
+                "en": "75 %",
+                "fr": "75 %",
+                "de": "75 %",
+                "es": "75 %"
+              }
+            },
+            {
+              "value": "90",
+              "label": {
+                "en": "90 %",
+                "fr": "90 %",
+                "de": "90 %",
+                "es": "90 %"
+              }
+            },
+            {
+              "value": "100",
+              "label": {
+                "en": "100 % (used up)",
+                "fr": "100 % (épuisée)",
+                "de": "100 % (aufgebraucht)",
+                "es": "100 % (agotado)"
+              }
+            },
+            {
+              "value": "over",
+              "label": {
+                "en": "Overspent",
+                "fr": "Dépassée",
+                "de": "Überzogen",
+                "es": "Sobrepasado"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Category name",
+            "fr": "Nom de la catégorie",
+            "de": "Name der Kategorie",
+            "es": "Nombre de la categoría"
+          }
+        },
+        {
+          "key": "budgeted",
+          "type": "number",
+          "label": {
+            "en": "Budgeted",
+            "fr": "Budgété",
+            "de": "Budgetiert",
+            "es": "Presupuestado"
+          }
+        },
+        {
+          "key": "spent",
+          "type": "number",
+          "label": {
+            "en": "Spent",
+            "fr": "Dépensé",
+            "de": "Ausgegeben",
+            "es": "Gastado"
+          }
+        },
+        {
+          "key": "left",
+          "type": "number",
+          "label": {
+            "en": "Left",
+            "fr": "Restant",
+            "de": "Verbleibend",
+            "es": "Restante"
+          }
+        },
+        {
+          "key": "percent",
+          "type": "number",
+          "label": {
+            "en": "Envelope used (%)",
+            "fr": "Enveloppe consommée (%)",
+            "de": "Umschlag verbraucht (%)",
+            "es": "Sobre consumido (%)"
+          }
+        },
+        {
+          "key": "currency",
+          "type": "string",
+          "label": {
+            "en": "Currency (EUR, USD…)",
+            "fr": "Devise (EUR, USD…)",
+            "de": "Währung (EUR, USD…)",
+            "es": "Divisa (EUR, USD…)"
+          }
+        },
+        {
+          "key": "text",
+          "type": "string",
+          "label": {
+            "en": "Sentence to send or read",
+            "fr": "Phrase à envoyer ou à lire",
+            "de": "Satz zum Senden oder Vorlesen",
+            "es": "Frase para enviar o leer"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "read_balances",
+      "label": {
+        "en": "Actual Budget: read the balances",
+        "fr": "Actual Budget : lire les soldes",
+        "de": "Actual Budget: Kontostände lesen",
+        "es": "Actual Budget: leer los saldos"
       },
-      "timeout_seconds": 15,
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ],
+      "description": {
+        "en": "The balance of every account added to Gladys, as a sentence to send by message or read aloud.",
+        "fr": "Le solde de chaque compte ajouté à Gladys, en une phrase à envoyer par message ou à lire à voix haute.",
+        "de": "Der Stand jedes zu Gladys hinzugefügten Kontos, als Satz zum Senden per Nachricht oder zum Vorlesen.",
+        "es": "El saldo de cada cuenta añadida a Gladys, en una frase para enviar por mensaje o leer en voz alta."
+      },
+      "timeout_seconds": 180,
       "outputs": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "text",
+          "type": "string",
+          "label": {
+            "en": "Sentence to send or read",
+            "fr": "Phrase à envoyer ou à lire",
+            "de": "Satz zum Senden oder Vorlesen",
+            "es": "Frase para enviar o leer"
+          }
+        },
+        {
+          "key": "count",
+          "type": "number",
+          "label": {
+            "en": "Number of accounts",
+            "fr": "Nombre de comptes",
+            "de": "Anzahl der Konten",
+            "es": "Número de cuentas"
+          }
+        },
+        {
+          "key": "total",
+          "type": "number",
+          "label": {
+            "en": "Total of the balances",
+            "fr": "Total des soldes",
+            "de": "Summe der Kontostände",
+            "es": "Total de los saldos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "read_budgets",
+      "label": {
+        "en": "Actual Budget: read the envelopes",
+        "fr": "Actual Budget : lire les enveloppes",
+        "de": "Actual Budget: Umschläge lesen",
+        "es": "Actual Budget: leer los sobres"
+      },
+      "description": {
+        "en": "The money to budget, then what every category added to Gladys has spent and has left this month, as one text.",
+        "fr": "L'argent à budgéter, puis ce que chaque catégorie ajoutée à Gladys a dépensé et garde ce mois-ci, en un texte.",
+        "de": "Das zu budgetierende Geld, dann was jede zu Gladys hinzugefügte Kategorie diesen Monat ausgegeben hat und übrig hat, als ein Text.",
+        "es": "El dinero por presupuestar y lo que cada categoría añadida a Gladys ha gastado y le queda este mes, en un texto."
+      },
+      "timeout_seconds": 180,
+      "outputs": [
+        {
+          "key": "text",
+          "type": "string",
+          "label": {
+            "en": "Sentence to send or read",
+            "fr": "Phrase à envoyer ou à lire",
+            "de": "Satz zum Senden oder Vorlesen",
+            "es": "Frase para enviar o leer"
+          }
+        },
+        {
+          "key": "count",
+          "type": "number",
+          "label": {
+            "en": "Number of categories",
+            "fr": "Nombre de catégories",
+            "de": "Anzahl der Kategorien",
+            "es": "Número de categorías"
+          }
+        },
+        {
+          "key": "over_count",
+          "type": "number",
+          "label": {
+            "en": "Categories overspent",
+            "fr": "Catégories dépassées",
+            "de": "Überzogene Kategorien",
+            "es": "Categorías sobrepasadas"
+          }
+        },
+        {
+          "key": "to_budget",
+          "type": "number",
+          "label": {
+            "en": "To budget",
+            "fr": "À budgéter",
+            "de": "Zu budgetieren",
+            "es": "Por presupuestar"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "overview",
+      "label": {
+        "en": "Actual Budget overview",
+        "fr": "Aperçu Actual Budget",
+        "de": "Actual-Budget-Übersicht",
+        "es": "Resumen de Actual Budget"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Money to budget, balances of your accounts and envelopes of the month, from Actual Budget.",
+        "fr": "Argent à budgéter, soldes de vos comptes et enveloppes du mois, depuis Actual Budget.",
+        "de": "Zu budgetierendes Geld, Kontostände und Umschläge des Monats aus Actual Budget.",
+        "es": "Dinero por presupuestar, saldos de sus cuentas y sobres del mes, desde Actual Budget."
+      },
+      "icon": "dollar-sign"
     }
   ]
 }

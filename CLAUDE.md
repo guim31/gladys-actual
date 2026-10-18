@@ -31,16 +31,21 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only, see src/app.js
+src/app.js                        every SDK handler registered on the monitor, before connect()
+src/monitor.js                    refresh cycle: budget → devices, states, scene trigger
+src/actual.js                     one reading in a worker, error codes, parsing of the answer
+src/reader.js                     the worker: @actual-app/api (init, download, read, shutdown)
+src/devices.js                    devices per account, category, and the month
+src/actions.js                    scene actions read_balances/read_budgets; config action check_now
+src/widgets.js                    dashboard widget `overview` (status + card-list)
+src/texts.js                      texts of the container in en/fr/de/es, number and date formats
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js                      /data/actual.json: trigger levels already fired (atomic)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en and fr mandatory)
+test/                             node --test, against the SDK's fake Gladys and a fake Actual
+test/fixtures/actual/             answers of the worker on a real actual-server 26.10.0 (made-up budgets)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +75,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, feature names, widget texts and
+  `docs/{en,fr,de,es}.md`, kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +239,35 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Actual Budget (cette intégration)
+
+- **Pas d'API REST** : paquet officiel `@actual-app/api` (MIT, 26.10.0), qui embarque tout le moteur
+  d'Actual (≈ 110 Mo de RSS une fois chargé, `better-sqlite3` natif : prébuild musl x64/arm64, rien à
+  compiler sur l'image alpine). Il tient **un budget global** et écrit sur la console (noms, ids). D'où le
+  **worker éphémère** (`src/reader.js`) : console muette, mémoire rendue à la fin de chaque lecture, tas
+  plafonné (`resourceLimits`), délai de 120 s. Au repos, le conteneur ne charge pas le paquet.
+- **Séquence** : `init({ dataDir, serverURL, password })` (connexion), `downloadBudget(syncId, { password })`
+  (1re fois : téléchargement ; ensuite : chargement de la copie locale + sync), `getAccounts`,
+  `getAccountBalance`, `getBudgetMonths`/`getBudgetMonth`, `getPreferences` (`defaultCurrencyCode`), le
+  type de budget par `aqlQuery(q('preferences')…budgetType)`, `shutdown`. `dataDir` doit exister (ENOENT
+  sinon).
+- **Erreurs** : `err.code` (`invalid-password`, `network-failure`, `budget-not-found`, `missing-key`,
+  `decrypt-failure`, `out-of-sync-migrations`, `file-has-reset`…). Les **messages** contiennent le nom et
+  le sync id du budget : ne jamais les journaliser ni les renvoyer (seul le code sort du worker).
+- **Montants** en centimes entiers ; `spent` négatif ; `balance` d'une catégorie = report + budgété −
+  dépensé. Part consommée = dépensé / (restant + dépensé), plafonnée à 1000 % (enveloppe vide dépensée).
+  Groupes de revenus : `is_income` au niveau du **groupe** (pas toujours sur la catégorie). Budget en mode
+  « tracking » : `toBudget` vaut `null`.
+- `getBudgets()` mélange copies locales et budgets distants : dédoublonner par `groupId`.
+- **Copie locale** sous `/data/budget` (non chiffrée, même pour un budget E2E) : supprimée à chaque
+  démarrage et quand l'adresse ou le sync id change ; en cas de `file-has-reset`/`out-of-sync-*`, supprimée
+  puis relue une fois.
+- **Instance de test** : `actualbudget/actual-server` en Docker ; mot de passe posé par
+  `POST /account/bootstrap {"password"}` ; budgets créés par `@actual-app/api` : `send('create-budget')` puis
+  **`send('upload-budget')` explicite** (l'upload de `create-budget` échoue en silence), comptes,
+  catégories, opérations, `setBudgetAmount`, chiffrement par `send('key-make', { password })`, mode
+  tracking par `setPreference('budgetType', 'tracking')`, puis `sync()`.
+- **Choix** : comme Firefly, seuls les appareils ajoutés dans Gladys sont suivis ; seuil de solde par le
+  déclencheur standard ; premiers seuils vus = point de départ. Pas d'option « certificat auto-signé »
+  (il faudrait désactiver TLS pour tout le processus) : adresse `http` du réseau local conseillée.

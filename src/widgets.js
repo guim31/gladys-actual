@@ -1,169 +1,134 @@
 // -----------------------------------------------------------------------------
-// Dashboard widgets (SDK v0.14+, Gladys 5.1+).
+// Dashboard widget (manifest `widgets`, Gladys 5.1+): `overview`.
 //
-// A widget puts the integration's own data on the Gladys dashboard without a
-// dedicated core widget. The manifest `widgets` field declares its identity
-// (key, label, icon, optional per-instance `settings`); at runtime the
-// integration returns a DECLARATIVE content — `text`, `value`, `gauge`,
-// `status`, `chart`, `card-list`, `image`, `button` — that the core renders
-// with its own theme, dark mode and translations. No HTML, no CSS.
-//
-// Each entry of WIDGETS is keyed by the widget `key` and exposes:
-//   - get(gladys, { settings, language, units, config }): the content,
-//     registered by index.js with `gladys.onWidgetGet(key, ...)`;
-//   - action(gladys, { actionKey, params, settings, config }) (optional): a
-//     tapped `button` carrying an `action`, registered with
-//     `gladys.onWidgetAction`.
-//
-// Check your contents in the tests with `validateWidgetContent` (exported by
-// the SDK, see test/widgets.test.js), or run with DEBUG=gladys-integration-sdk
-// to have the SDK log every violation of the vocabulary and the budget.
+// The money to budget (month device added) and the accounts added in Gladys
+// as a `status` list (red when negative), then the categories added as a
+// `card-list` (8 rows at most, the core's cap): the category as title, spent
+// and left as subtitle, the share of the envelope used as a badge, green under
+// 75 %, orange up to 100 %, red when overspent. The footer gives the time of
+// the reading.
+// Budget: 1 status, 1 card-list, 2 texts at most.
 // -----------------------------------------------------------------------------
 
-import {
-  createLogger,
-  DEVICE_FEATURE_CATEGORIES,
-  DEVICE_TRANSPORTS,
-  WIDGET_COLORS,
-} from '@gladysassistant/integration-sdk';
-import { identifyDevice } from './devices/index.js';
-import { weatherStation } from './devices/weatherStation.js';
-import { plug } from './devices/plug.js';
-import { light } from './devices/light.js';
+import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
+import { DEVICE_TYPES } from './devices.js';
+import { WIDGET_KEY } from './monitor.js';
+import { formatAmount, formatDate, formatPercent } from './texts.js';
 
-const logger = createLogger({ name: 'widgets' });
+export const MAX_ROWS = 10;
+export const MAX_CATEGORIES = 8;
+export const TTL_SECONDS = 300;
 
-// Widget key, as declared in the manifest `widgets` field.
-export const DEMO_STATUS_WIDGET = 'demo_status';
-
-// Keys of the `button` actions the demo_status content declares.
-const DEMO_STATUS_ACTIONS = { IDENTIFY_LIGHT: 'identify_light' };
-
-// How the plug transport reads in the status list.
-const TRANSPORT_STATUS = {
-  [DEVICE_TRANSPORTS.LOCAL]: { value: { en: 'Local', fr: 'Locale' }, color: WIDGET_COLORS.SUCCESS },
-  [DEVICE_TRANSPORTS.CLOUD]: { value: { en: 'Cloud', fr: 'Cloud' }, color: WIDGET_COLORS.INFO },
-  [DEVICE_TRANSPORTS.UNREACHABLE]: {
-    value: { en: 'Unreachable', fr: 'Injoignable' },
-    color: WIDGET_COLORS.DANGER,
+export const TEXT = {
+  waiting: {
+    en: 'Waiting for Actual Budget…',
+    fr: 'En attente d’Actual Budget…',
+    de: 'Warte auf Actual Budget…',
+    es: 'Esperando a Actual Budget…',
   },
+  empty: {
+    en: 'Add accounts or categories',
+    fr: 'Ajoutez comptes ou catégories',
+    de: 'Füge Konten/Kategorien hinzu',
+    es: 'Añada cuentas o categorías',
+  },
+  unreachable: {
+    en: 'Actual Budget does not answer',
+    fr: 'Actual Budget ne répond pas',
+    de: 'Actual Budget antwortet nicht',
+    es: 'Actual Budget no responde',
+  },
+  toBudget: { en: 'To budget', fr: 'À budgéter', de: 'Zu budgetieren', es: 'Por presupuestar' },
+  spent: { en: 'spent', fr: 'dépensé', de: 'ausgegeben', es: 'gastado' },
+  left: { en: 'left', fr: 'restant', de: 'übrig', es: 'restante' },
+  budgeted: { en: 'Budgeted', fr: 'Budgété', de: 'Budgetiert', es: 'Presupuestado' },
+  readAt: { en: 'Read', fr: 'Lu le', de: 'Gelesen', es: 'Leído' },
 };
 
-// A live tile references a feature by its external_id: read it from the
-// discovery payload itself, so the widget and the device never disagree.
-function featureExternalId(gladys, config, blueprint, category) {
-  const device = blueprint.buildDevice(gladys, config);
-  return device.features.find((feature) => feature.category === category).external_id;
+const t = (text, language) => text[language] ?? text.en;
+const clip = (text, max) => (text.length <= max ? text : `${text.slice(0, max - 1)}…`);
+
+/** The colour of a category: green under 75 %, orange up to 100 %, red when overspent. */
+export function categoryColor(category) {
+  if (category.left !== null && category.left < 0) {
+    return WIDGET_COLORS.DANGER;
+  }
+  if (category.percent === null) {
+    return WIDGET_COLORS.NEUTRAL;
+  }
+  return category.percent >= 75 ? WIDGET_COLORS.WARNING : WIDGET_COLORS.SUCCESS;
 }
 
-function plugConnectionStatus(gladys, config) {
-  const { transport, degraded } = plug.transport(gladys, config);
-  const { value, color } = TRANSPORT_STATUS[transport];
-  if (degraded) {
-    return {
-      value: { en: `${value.en} (degraded mode)`, fr: `${value.fr} (mode dégradé)` },
-      color: WIDGET_COLORS.WARNING,
-    };
-  }
-  return { value, color };
+/** One row of the categories, and its detail panel. */
+export function categoryItem(category, currency, language) {
+  const amount = (value) => formatAmount(value, currency, language);
+  const colon = language === 'fr' ? ' : ' : ': ';
+  return {
+    title: clip(category.name, 60),
+    subtitle: clip(
+      `${amount(category.spent)} ${t(TEXT.spent, language)} · ${amount(category.left)} ${t(TEXT.left, language)}`,
+      60,
+    ),
+    badge: { text: formatPercent(category.percent, language), color: categoryColor(category) },
+    description: `${t(TEXT.budgeted, language)}${colon}${amount(category.budgeted)}`,
+  };
 }
 
 export const WIDGETS = {
-  [DEMO_STATUS_WIDGET]: {
-    // `settings` holds the per-instance values of the declared `settings`
-    // (none here); `language` and `units` are those of the user viewing the
-    // dashboard, for the values you format yourself. Multi-language objects
-    // (`{ en, fr }`) are picked by the core, like everywhere else.
-    async get(gladys, { config }) {
-      logger.debug(`onWidgetGet <- ${DEMO_STATUS_WIDGET}`);
-      return {
-        // Reload policy: the computed parts below only change with the
-        // config, and index.js nudges the widget on every (re)connection and
-        // config update (see refreshWidgets) — the TTL is just a safety net.
-        ttl_seconds: 300,
-        components: [
-          // Device-bound tiles: LIVE, they follow the published states over
-          // the core's real-time path. No TTL, no nudge involved.
-          {
-            type: 'value',
-            label: { en: 'Temperature', fr: 'Température' },
-            icon: 'thermometer',
-            device_feature: featureExternalId(
-              gladys,
-              config,
-              weatherStation,
-              DEVICE_FEATURE_CATEGORIES.TEMPERATURE_SENSOR,
-            ),
-          },
-          {
-            type: 'value',
-            label: { en: 'Office plug', fr: 'Prise du bureau' },
-            icon: 'zap',
-            device_feature: featureExternalId(
-              gladys,
-              config,
-              plug,
-              DEVICE_FEATURE_CATEGORIES.ENERGY_SENSOR,
-            ),
-          },
-          // Computed rows: what the integration knows that no device feature
-          // carries. Served from the core cache until the TTL or a nudge.
-          {
-            type: 'status',
-            items: [
-              {
-                label: { en: 'Plug connection', fr: 'Connexion de la prise' },
-                icon: 'wifi',
-                ...plugConnectionStatus(gladys, config),
-              },
-              {
-                label: { en: 'Observed location', fr: 'Position observée' },
-                icon: 'map-pin',
-                value: `${config.latitude.toFixed(2)}, ${config.longitude.toFixed(2)}`,
-                color: WIDGET_COLORS.NEUTRAL,
-              },
-            ],
-          },
-          // `params` are declared HERE and sent back as-is: the handler never
-          // receives user input (a dashboard can hang on a public wall).
-          {
-            type: 'button',
-            label: { en: 'Identify the light', fr: 'Identifier la lampe' },
-            icon: 'eye',
-            style: 'secondary',
-            action: {
-              key: DEMO_STATUS_ACTIONS.IDENTIFY_LIGHT,
-              params: { device: light.deviceExternalId(gladys) },
-            },
-          },
-        ],
-      };
-    },
-
-    // Resolve an optional toast (string or multi-language object, ≤ 200
-    // characters). After a successful action the core drops the cached
-    // content and every open dashboard refetches it: no nudge needed.
-    async action(gladys, { actionKey, params, config }) {
-      logger.info(`onWidgetAction <- ${DEMO_STATUS_WIDGET}.${actionKey}`);
-      if (actionKey === DEMO_STATUS_ACTIONS.IDENTIFY_LIGHT) {
-        return identifyDevice(gladys, params.device, config);
+  [WIDGET_KEY]: {
+    async get(monitor, { language = 'en' } = {}) {
+      const lang = TEXT.spent[language] ? language : 'en';
+      const components = [];
+      if (!monitor.snapshot) {
+        const text = monitor.problem ? t(TEXT.unreachable, lang) : t(TEXT.waiting, lang);
+        return { ttl_seconds: 60, components: [{ type: 'text', variant: 'heading', text }] };
       }
-      // Throwing acks the action as failed: the message reaches the user.
-      throw new Error(`Unknown widget action: ${actionKey}`);
+      const currency = monitor.currency();
+      const [month] = monitor.created(DEVICE_TYPES.MONTH);
+      const accounts = monitor.created(DEVICE_TYPES.ACCOUNT);
+      const categories = monitor.created(DEVICE_TYPES.CATEGORY);
+      const rows = [];
+      if (month && month.toBudget !== null) {
+        rows.push({
+          label: t(TEXT.toBudget, lang),
+          value: clip(formatAmount(month.toBudget, currency, lang), 40),
+          icon: 'inbox',
+          color: month.toBudget < 0 ? WIDGET_COLORS.DANGER : WIDGET_COLORS.SUCCESS,
+        });
+      }
+      for (const account of accounts) {
+        rows.push({
+          label: clip(account.name, 40),
+          value: clip(formatAmount(account.balance, currency, lang), 40),
+          icon: 'credit-card',
+          color: account.balance < 0 ? WIDGET_COLORS.DANGER : WIDGET_COLORS.NEUTRAL,
+        });
+      }
+      if (rows.length === 0 && categories.length === 0) {
+        components.push({ type: 'text', variant: 'heading', text: t(TEXT.empty, lang) });
+      }
+      if (rows.length > 0) {
+        components.push({ type: 'status', items: rows.slice(0, MAX_ROWS) });
+      }
+      if (categories.length > 0) {
+        components.push({
+          type: 'card-list',
+          display: 'list',
+          items: categories
+            .slice(0, MAX_CATEGORIES)
+            .map((category) => categoryItem(category, currency, lang)),
+        });
+      }
+      const unreachable = monitor.problem ? ` · ${t(TEXT.unreachable, lang)}` : '';
+      components.push({
+        type: 'text',
+        variant: 'caption',
+        text: clip(
+          `Actual Budget · ${t(TEXT.readAt, lang)} ${formatDate(monitor.lastSuccessAt, lang)}${unreachable}`,
+          80,
+        ),
+      });
+      return { ttl_seconds: TTL_SECONDS, components };
     },
   },
 };
-
-/**
- * Freshness nudge: ask the core to re-pull every widget NOW instead of
- * waiting for the content TTL. Call it when you KNOW a computed content
- * changed (here: the config, which drives the plug transport and the observed
- * location) — and after every (re)connection, since the nudges are
- * fire-and-forget: rate-limited core-side to 1 per 10 s per widget, dropped
- * silently while disconnected.
- */
-export function refreshWidgets(gladys) {
-  for (const key of Object.keys(WIDGETS)) {
-    gladys.requestWidgetRefresh(key);
-  }
-}

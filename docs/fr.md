@@ -1,67 +1,150 @@
-# Template de démonstration
+# Actual Budget
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Votre budget par enveloppes dans Gladys : le solde de vos comptes, l'argent restant à budgéter et l'état de
+chaque enveloppe du mois, lus depuis votre propre [Actual Budget](https://actualbudget.org), l'application de
+budget libre et auto-hébergée.
+
+L'intégration ne fait que lire : elle n'écrit jamais dans votre budget, ne crée aucune opération. Elle parle
+directement à votre serveur Actual sur votre réseau, avec le paquet officiel `@actual-app/api`. Non affiliée à
+Actual Budget.
 
 ## Ce que vous obtenez
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+- Un **appareil par compte ouvert** (compte courant, épargne, carte de crédit, placement hors budget…) : son
+  solde, avec son historique.
+- Un **appareil par catégorie** du budget (une enveloppe) : budgété, dépensé et restant ce mois-ci, et la part de
+  l'enveloppe consommée.
+- Un **appareil « mois »** : argent à budgéter, dépensé ce mois-ci et revenus du mois.
+- Un **widget de tableau de bord** : l'argent à budgéter, le solde de vos comptes et les enveloppes du mois.
+- Un **déclencheur de scène** : une enveloppe qui atteint 50, 75, 90 ou 100 % de son argent, ou qui est dépassée.
+- Deux **actions de scène** : lire les soldes ou les enveloppes, en une phrase à envoyer par message ou à faire
+  lire à voix haute.
+
+## Prérequis
+
+- Gladys Assistant 5.1 ou plus récent.
+- Un serveur Actual (`actual-server`, testé avec la 26.10.0), joignable depuis la machine de Gladys (même réseau,
+  VPN ou adresse publique), avec une connexion par mot de passe.
+- Le mot de passe du serveur, et le mot de passe de chiffrement si votre budget est chiffré de bout en bout.
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+### Trouver l'ID de synchronisation
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+Si votre serveur n'a qu'un budget, laissez l'ID de synchronisation vide : l'intégration prend celui-là. Sinon,
+dans Actual, ouvrez le budget, puis **Paramètres → Afficher les paramètres avancés** : l'**ID de
+synchronisation** y figure. Copiez-le en entier.
 
-## Actions
+### Réglages
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+| Réglage                         | Rôle                                                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Adresse du serveur Actual       | L'adresse à laquelle vous ouvrez Actual, ex. `http://192.168.1.20:5006` ou `https://budget.maison` |
+| Mot de passe du serveur         | Le mot de passe avec lequel vous vous connectez à Actual                                           |
+| ID de synchronisation du budget | Vide pour le seul budget du serveur, sinon l'ID trouvé ci-dessus                                   |
+| Mot de passe de chiffrement     | Seulement pour un budget chiffré de bout en bout                                                   |
+| Devise                          | Automatique (la devise par défaut réglée dans Actual, l'euro sinon), ou euro, dollar, livre, CHF…  |
+| Fréquence de mise à jour        | 5, 10, 15 (par défaut), 30 ou 60 minutes                                                           |
+| Langue des textes               | Noms des fonctionnalités (à leur création) et phrases des scènes                                   |
 
-## Scènes
+Enregistrez, puis cliquez sur **Tester la connexion** : la réponse donne le nombre de comptes ouverts et de
+catégories du budget, ou, s'il y a plusieurs budgets et pas d'ID, leurs noms et ID de synchronisation. Ouvrez
+ensuite l'onglet **Découverte** et ajoutez les appareils voulus dans Gladys. **Seuls les appareils ajoutés sont
+suivis** : leurs états, le widget, le déclencheur et les actions ne portent que sur eux.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+## Appareils
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+| Appareil  | Fonctionnalités                                                                             |
+| --------- | ------------------------------------------------------------------------------------------- |
+| Compte    | Solde (négatif pour une carte de crédit à découvert)                                        |
+| Catégorie | Budgété, Dépensé, Restant (négatif si dépassée), Enveloppe consommée (%)                    |
+| Mois      | À budgéter, Dépensé ce mois-ci, Revenus du mois (tous les revenus, soldes initiaux compris) |
 
-## Tableau de bord
+Les montants en euros, dollars ou livres affichent leur unité ; une autre devise est ajoutée au nom de l'appareil
+(`Épargne (CHF)`). Les comptes clos, les catégories masquées (ou dans un groupe masqué) et les catégories de
+revenus sont écartés. Les valeurs sont celles du mois en cours, dans le fuseau horaire de Gladys.
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+**Enveloppe consommée** est ce qui a été dépensé ce mois-ci sur l'argent dont disposait l'enveloppe : le budgété
+plus le report du mois précédent. Une enveloppe dépensée alors qu'elle était vide affiche 1000 %, le plafond.
+
+Pour être prévenu quand un solde passe sous un seuil, utilisez le déclencheur standard de Gladys **« Changement
+d'état de l'appareil »** sur le **Solde** du compte, avec la condition « inférieur » : pas besoin d'un
+déclencheur de l'intégration. De même pour l'argent à budgéter.
+
+## Widget de tableau de bord
+
+**Aperçu Actual Budget** affiche l'argent à budgéter (si l'appareil « mois » est ajouté) et les comptes ajoutés
+dans Gladys avec leur solde (en rouge s'il est négatif), puis les catégories ajoutées (8 au plus) avec le dépensé
+et le restant, et la part de l'enveloppe consommée : vert sous 75 %, orange jusqu'à 100 %, rouge si dépassée.
+Touchez une catégorie pour voir le budgété. Le pied donne l'heure de la dernière lecture.
+
+## Déclencheurs de scène
+
+- **Actual Budget : seuil d'enveloppe** : les dépenses d'une catégorie ajoutée dans Gladys atteignent 50, 75, 90
+  ou 100 % de son argent du mois, ou la catégorie est dépassée (au choix). Il se déclenche une fois par seuil et
+  par mois. Les seuils déjà atteints à la première lecture de la catégorie servent de point de départ et ne
+  déclenchent rien. Variables : nom, budgété, dépensé, restant, part consommée (%), devise et une phrase toute
+  prête.
+
+Ce qui a été déclenché est gardé dans les données de l'intégration : un redémarrage ne déclenche rien deux fois.
+
+## Actions de scène
+
+- **Actual Budget : lire les soldes** : le solde de chaque compte ajouté, en une phrase. Sorties : `text`,
+  `count`, `total` (somme des soldes).
+- **Actual Budget : lire les enveloppes** : l'argent à budgéter (appareil « mois » ajouté), puis ce que chaque
+  catégorie ajoutée a dépensé et garde. Sorties : `text`, `count`, `over_count` (catégories dépassées),
+  `to_budget`.
+
+Une action relit le budget quand la dernière lecture date de plus d'un intervalle de mise à jour.
+
+## Exemples de scènes
+
+- **Courses presque épuisées** : déclencheur « seuil d'enveloppe », 90 %, sur la catégorie des courses ; action :
+  prévenir la famille sur Telegram avec `{{triggerEvent.data.text}}`.
+- **Dépassement** : déclencheur « seuil d'enveloppe », « Dépassée », sur une catégorie ; action : envoyer un
+  message pour la renflouer.
+- **Point du lundi matin** : chaque lundi à 8 h, action « lire les enveloppes », puis faire lire `{{output.text}}`
+  par l'enceinte de la cuisine.
+
+## Confidentialité et données
+
+- L'intégration lit votre budget et n'y écrit jamais.
+- Les mots de passe sont gardés par Gladys comme tout réglage secret, et jamais écrits dans les journaux.
+- Les journaux ne contiennent jamais de montant, de nom de compte ou de catégorie, d'ID de synchronisation ni
+  l'adresse du serveur, même en debug : seulement des nombres, des codes d'erreur et des seuils.
+- Aucun numéro de compte n'est mis dans Gladys. Les noms des comptes et catégories deviennent des noms
+  d'appareils, que vous pouvez renommer.
+- Le volume de données de l'intégration garde une **copie locale du budget** (comme le fait l'application
+  Actual), pour qu'une lecture ne télécharge que ce qui a changé. Cette copie n'est pas chiffrée, même pour un
+  budget chiffré de bout en bout : protégez la machine de Gladys en conséquence. Elle est supprimée quand un autre
+  serveur ou budget est configuré, et à chaque redémarrage de l'intégration. Le volume garde aussi les seuils
+  déjà déclenchés (identifiants, mois et seuils).
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+| Message                                    | Que faire                                                                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Le serveur Actual refuse le mot de passe   | Vérifiez le mot de passe ; un serveur en connexion OpenID n'est pas pris en charge             |
+| Le serveur Actual ne répond pas            | Vérifiez l'adresse depuis la machine de Gladys (port 5006, `http`/`https`) et qu'Actual tourne |
+| Aucun budget avec cet ID                   | Recopiez l'ID depuis Paramètres → Afficher les paramètres avancés                              |
+| Le serveur a plusieurs budgets             | Indiquez l'ID : « Tester la connexion » liste les budgets avec le leur                         |
+| Ce budget est chiffré de bout en bout      | Indiquez son mot de passe de chiffrement                                                       |
+| Ce budget demande une version plus récente | Actual a été mis à jour : mettez aussi l'intégration à jour                                    |
+| Un appareil n'a pas de valeur              | Ajoutez-le dans l'onglet Découverte : seuls les appareils ajoutés sont suivis                  |
+
+Les journaux de l'intégration (Intégrations → Actual Budget → journaux) disent ce qui s'est passé ;
+`LOG_LEVEL=debug` donne plus de détails. Une adresse `https` demande un certificat que l'intégration reconnaît :
+avec un certificat auto-signé, utilisez l'adresse `http` du serveur sur votre réseau.
+
+## Limites
+
+- Lecture seule : aucune opération ne peut être créée depuis Gladys.
+- Un serveur, un budget ; connexion par mot de passe seulement (pas d'OpenID).
+- Pas de conversion entre devises : Actual a une devise par budget.
+- Un budget en mode suivi (« tracking ») n'a pas d'« à budgéter » : cette fonctionnalité reste vide.
+- Les valeurs suivent l'intervalle de mise à jour : une opération apparaît dans Gladys à la lecture suivante. La
+  synchronisation bancaire n'est pas lancée par l'intégration.
+- Chaque lecture charge le paquet d'Actual quelques secondes (environ 100 Mo de mémoire), puis le libère.
+- Testée contre un vrai `actual-server` 26.10.0 en Docker, avec et sans chiffrement de bout en bout, pas encore
+  sur une installation de Gladys avec de vrais comptes : vos retours sont les bienvenus.
