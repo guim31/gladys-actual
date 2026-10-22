@@ -8,8 +8,8 @@
     "de": "Kontostände und Umschläge des Monats deines Actual Budget in Gladys.",
     "es": "Saldos de las cuentas y sobres del mes de su Actual Budget en Gladys."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/guim31/gladys-actual:1.0.0",
+  "version": "1.0.1",
+  "docker_image": "ghcr.io/guim31/gladys-actual:1.0.1",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/guim31/gladys-actual/main/cover.png",
   "categories": ["services"],
