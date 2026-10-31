@@ -90,7 +90,8 @@ test('even at debug: no amount, no name, no password, no sync id, no address', a
   await w.fake.action('check_now', {});
   actual.down = false;
   await w.fake.configUpdated({ ...CONFIG, password: 'wrong-password' });
-  const text = lines.map((line) => line.text).join('\n');
+  // Without the timestamp prefix: its milliseconds could match a number looked for below.
+  const text = lines.map(strip).join('\n');
   assert.ok(lines.length > 5);
   for (const secret of [
     PASSWORD,
