@@ -16,7 +16,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@actual-app/api": "^26.10.0",
+    "@actual-app/api": "^26.11.0",
     "@gladysassistant/integration-sdk": "^0.16.0"
   },
   "devDependencies": {
